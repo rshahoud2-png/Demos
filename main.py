@@ -398,32 +398,8 @@ async def root():
 
 @app.get("/health")
 async def health():
-    """
-    Health check endpoint for Fly.io.
-    Returns 200 if service is healthy, 503 if critical config is missing.
-    """
-    checks = {
-        "openai_configured": bool(OPENAI_API_KEY),
-        "logs_directory": LOGS_DIR.exists(),
-    }
-
-    all_healthy = all(checks.values())
-
-    response_data = {
-        "status": "healthy" if all_healthy else "degraded",
-        "timestamp": datetime.now().isoformat(),
-        "checks": checks
-    }
-
-    if all_healthy:
-        return response_data
-    else:
-        # Return 503 for Fly.io to know the service is not ready
-        return Response(
-            content=json.dumps(response_data),
-            media_type="application/json",
-            status_code=503
-        )
+    """Health check endpoint for Fly.io."""
+    return {"status": "ok"}
 
 
 # ============================================================================
