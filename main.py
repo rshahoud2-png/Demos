@@ -155,7 +155,9 @@ async def get_openai_response(
         return "I'm sorry, I'm having technical difficulties. Please call back later."
 
     try:
-        async with httpx.AsyncClient() as client:
+        # Explicit timeouts: 10s connect, 25s read (total ~30s max)
+        timeout = httpx.Timeout(connect=10.0, read=25.0, write=10.0, pool=5.0)
+        async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.post(
                 "https://api.openai.com/v1/chat/completions",
                 headers={
@@ -168,7 +170,6 @@ async def get_openai_response(
                     "max_tokens": max_tokens,
                     "temperature": 0.7
                 },
-                timeout=30.0
             )
             response.raise_for_status()
             data = response.json()
@@ -397,8 +398,32 @@ async def root():
 
 @app.get("/health")
 async def health():
-    """Health check endpoint."""
-    return {"status": "healthy", "timestamp": datetime.now().isoformat()}
+    """
+    Health check endpoint for Fly.io.
+    Returns 200 if service is healthy, 503 if critical config is missing.
+    """
+    checks = {
+        "openai_configured": bool(OPENAI_API_KEY),
+        "logs_directory": LOGS_DIR.exists(),
+    }
+
+    all_healthy = all(checks.values())
+
+    response_data = {
+        "status": "healthy" if all_healthy else "degraded",
+        "timestamp": datetime.now().isoformat(),
+        "checks": checks
+    }
+
+    if all_healthy:
+        return response_data
+    else:
+        # Return 503 for Fly.io to know the service is not ready
+        return Response(
+            content=json.dumps(response_data),
+            media_type="application/json",
+            status_code=503
+        )
 
 
 # ============================================================================
@@ -408,10 +433,12 @@ async def health():
 if __name__ == "__main__":
     import uvicorn
 
-    port = int(os.getenv("PORT", 8000))
+    port = int(os.getenv("PORT", 8080))
+    # Note: reload=True should only be used in local development, not in production
+    # Fly.io runs the container directly, so this block is mainly for local testing
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
         port=port,
-        reload=True
+        reload=os.getenv("ENV", "production") == "development"
     )

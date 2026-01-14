@@ -1,0 +1,54 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+env/
+.venv/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment files (secrets should be set via Fly.io secrets)
+.env
+.env.local
+.env.production
+
+# Logs (will be created at runtime)
+logs/*.jsonl
+logs/*.txt
+
+# Documentation (not needed in container)
+README.md
+*.md
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# Fly.io
+fly.toml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+tests/
+pytest_cache/
+.coverage
+htmlcov/
