@@ -267,6 +267,28 @@ async def voice_handle(
     user_input = SpeechResult.strip()
     logger.info(f"Voice input from {From}: {user_input}")
 
+    # Handle empty speech input (Twilio couldn't transcribe)
+    if not user_input:
+        logger.warning(f"Empty speech input from {From}, prompting to repeat")
+        gather = Gather(
+            input="speech",
+            action="/voice/handle",
+            method="POST",
+            timeout=5,
+            speech_timeout="auto"
+        )
+        gather.say(
+            "I'm sorry, I didn't catch that. Could you please repeat?",
+            voice="Polly.Matthew"
+        )
+        response.append(gather)
+
+        # If still no input, end call
+        response.say("I'm having trouble hearing you. Please call back. Goodbye!")
+        response.hangup()
+
+        return Response(content=str(response), media_type="application/xml")
+
     # Check for goodbye or max turns
     if check_for_goodbye(user_input) or conv["turn_count"] >= 6:
         # Generate farewell
